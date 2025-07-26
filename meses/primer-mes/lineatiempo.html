@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Línea de Tiempo</title>
+    <style>
+        body {
+            background-color: #f8f8f8;
+            font-family: 'Arial', sans-serif;
+        }
+        .timeline {
+            position: relative;
+            margin: 50px auto;
+            padding: 20px;
+            max-width: 700px;
+            text-align: left;
+        }
+        .event {
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: #ffb6c1;
+            border-radius: 10px;
+            position: relative;
+        }
+        .event::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 10px;
+            height: 100%;
+            width: 2px;
+            background-color: #ff69b4;
+        }
+        h2 {
+            color: #ff1493;
+        }
+        p {
+            color: #555;
+        }
+        .ver-video {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .ver-video button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff1493;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .ver-video button:hover {
+            background-color: #ff69b4;
+        }
+    </style>
+</head>
+<body>
+    <div class="timeline">
+        <div class="event">
+            <h2>Primer mensaje</h2>
+            <p>Recuerdo cuando te envié ese mensaje que cambió todo, me alegro de haber respondido ese estado.</p>
+        </div>
+        <div class="event">
+            <h2>De tirarle hate a los hombres a querer mucho a uno</h2>
+            <p>Me quieres como soy y eso es lo que me encanta de ti.</p>
+        </div>
+        <div class="event">
+            <h2>Nuestro primer encuentro</h2>
+            <p>El día en que nuestras miradas se cruzaron...todavía recuerdo lo nervioso que estaba frente a ti.</p>
+        </div>
+        <div class="event">
+            <h2>Nuestra primera cita universitaria</h2>
+            <p>Fue un momento especial, lo sencillo de la vista y vida universitaria, que a veces suelen ser aburridos pero con tus abrazos hace que ello cambie.</p>
+        </div>
+        <div class="event">
+            <h2>Nuestro primer beso</h2>
+            <p>De ser un inexperto a ser un experto, con tus besos que los deseo cada día.</p>
+        </div>
+        <!-- Puedes agregar más eventos según tus recuerdos -->
+        <div class="ver-video">
+            <button onclick="verVideo()">Ver video especial</button>
+        </div>
+    </div>
+
+    <script>
+        function verVideo() {
+            window.location.href = "video.html";  // Redirige a la página del video
+        }
+    </script>
+</body>
+</html>
