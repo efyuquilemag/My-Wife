@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes 11-10-2024</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #ffe4e1;
+            margin: 0;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+        h1 {
+            color: #ff69b4;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #ff1493;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ff69b4;
+        }
+    </style>
+</head>
+<body>
+    <h1>¡Hola mi amor!</h1>
+    <p>Ya cumplimos nuestro primer mes juntos.</p>
+    <button onclick="mostrarLineaTiempo()">Ver Recuerdos</button>
+
+    <script>
+        function mostrarLineaTiempo() {
+            window.location.href = "lineatiempo.html";  // Redirige a la página de la línea de tiempo
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', cursive;
+  background: url('assets/harryp.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #fff;
+}
+
+.fondo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: rgba(0,0,0,0.6);
+}
+
+.carta {
+  background: rgba(250, 240, 230, 0.9);
+  color: #3a003a;
+  padding: 30px;
+  border-radius: 15px;
+  max-width: 600px;
+  box-shadow: 0 0 15px #d582f0;
+  text-align: center;
+  animation: fadeIn 2s ease-in-out;
+}
+
+h1 {
+  font-size: 2em;
+  color: #a300a3;
+}
+
+p {
+  font-size: 1.1em;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+button {
+  margin: 5px;
+  padding: 10px 20px;
+  background-color: #d600aa;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  box-shadow: 0 0 10px #ff94da;
+  transition: transform 0.2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+#vela img {
+  width: 80px;
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  z-index: 10;
+}
+
+#corazones {
+  font-size: 3em;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  animation: flotar 3s infinite ease-in-out;
+}
+
+#recuerdo img {
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.oculto {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes flotar {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
