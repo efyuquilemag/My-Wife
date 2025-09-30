@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Juego Rompecabezas Mágico</title>
+<style>
+  :root{
+    --bg:#ffeef6; /* tema rosado suave por defecto */
+    --accent:#ff5fa8;
+    --container-max:720px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  body{
+    margin:0;
+    font-family: Inter, system-ui, Arial, sans-serif;
+    background: linear-gradient(180deg,var(--bg), #fff);
+    color:#222;
+    display:flex;
+    min-height:100vh;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  .wrap{
+    width:100%;
+    max-width:var(--container-max);
+    display:grid;
+    grid-template-columns: 1fr 320px;
+    gap:18px;
+  }
+
+  /* Para pantallas pequeñas apilar */
+  @media (max-width:860px){
+    .wrap{grid-template-columns: 1fr; padding-bottom:30px;}
+  }
+
+  .board-card{
+    background: white;
+    border-radius:14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    padding:14px;
+  }
+
+  .controls{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .controls .row{display:flex;gap:8px;align-items:center;}
+  label{font-size:14px;color:#444;}
+  input[type="range"]{width:100%;}
+  button{
+    background:var(--accent);
+    color:white;
+    border:none;
+    padding:10px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  button.secondary{
+    background:transparent;
+    color:var(--accent);
+    border:2px solid var(--accent);
+  }
+  .small{font-size:13px;padding:8px 10px;border-radius:8px;}
+
+  /* tablero */
+  .board-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+  }
+  .puzzle-area{
+    background:linear-gradient(180deg,#fff,#fff0);
+    width:100%;
+    max-width:100%;
+    aspect-ratio: 4/3; /* se mantendrá la relación */
+    position:relative;
+    border-radius:12px;
+    overflow:hidden;
+  }
+
+  .piece{
+    position:absolute;
+    touch-action:none;
+    cursor:grab;
+    will-change:transform,left,top;
+    transition: box-shadow .12s, transform .12s;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    border-radius:6px;
+    background-repeat:no-repeat;
+    background-size: cover;
+  }
+  .piece.dragging{
+    cursor:grabbing;
+    transform: scale(1.05) rotate(0.5deg);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+  }
+
+  .hud{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .status{font-weight:700;color:var(--accent);}
+  .small-muted{font-size:13px;color:#666;}
+
+  .controls .upload{
+    display:flex; gap:8px; align-items:center;
+  }
+
+  .credits{font-size:12px;color:#666;margin-top:8px;}
+
+  /* confetti/message simple */
+  .winMsg{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+    font-size:22px;
+    font-weight:800;
+    color:var(--accent);
+    text-shadow:0 2px 8px rgba(0,0,0,0.12);
+    opacity:0;
+    transform:scale(.9);
+    transition:all .45s ease;
+  }
+  .winMsg.show{opacity:1;transform:scale(1);pointer-events:auto;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="board-card">
+    <div class="hud">
+      <div>
+        <div class="status">Rompecabezas</div>
+        <div class="small-muted" id="piecesInfo">-- piezas</div>
+      </div>
+      <div>
+        <div class="small-muted">Tiempo: <span id="timer">00:00</span></div>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="puzzle-area" id="puzzleArea">
+        <div class="winMsg" id="winMsg">¡Felicidades! 🎉</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="shuffleBtn">Mezclar</button>
+      <button id="hintBtn" class="secondary small">Mostrar imagen</button>
+      <button id="resetBtn" class="secondary small">Reiniciar</button>
+    </div>
+    <div class="credits">
+      Sugerencia: sube una propia imagen, ajusta filas y columnas.
+    </div>
+  </div>
+
+  <div class="board-card controls">
+    <div class="row">
+      <label style="flex:1">Selecciona imagen</label>
+    </div>
+    <div class="row upload">
+      <input type="file" id="imgUpload" accept="image/*">
+      <input type="text" id="urlInput" placeholder="o pega URL pública" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eee">
+      <button id="loadUrl" class="small">Cargar</button>
+    </div>
+
+    <div class="row">
+      <label>Filas: <span id="rowsLabel">3</span></label>
+      <input id="rowsRange" type="range" min="2" max="6" value="3">
+    </div>
+    <div class="row">
+      <label>Columnas: <span id="colsLabel">4</span></label>
+      <input id="colsRange" type="range" min="2" max="6" value="4">
+    </div>
+
+    <div class="row">
+      <label>Umbral de ajuste (px)</label>
+      <input id="snapRange" type="range" min="8" max="60" value="30">
+    </div>
+
+    <div class="row">
+      <label>Temática</label>
+      <select id="themeSelect" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eee">
+        <option value="pink">Rosado</option>
+        <option value="blue">Azul</option>
+        <option value="green">Verde</option>
+      </select>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button id="startBtn" class="small">Crear juego</button>
+      <button id="downloadBtn" class="small secondary">Descargar imagen</button>
+    </div>
+
+    <div style="margin-top:10px;font-size:13px;color:#555">
+      Controles: arrastra piezas (o toca y mueve). Pulsa "Mostrar imagen" para ver la referencia temporalmente.
+    </div>
+  </div>
+</div>
+
+<script>
+/* Puzzle dinámico con soporte pointer events (mouse + touch). */
+const puzzleArea = document.getElementById('puzzleArea');
+const rowsRange = document.getElementById('rowsRange');
+const colsRange = document.getElementById('colsRange');
+const rowsLabel = document.getElementById('rowsLabel');
+const colsLabel = document.getElementById('colsLabel');
+const snapRange = document.getElementById('snapRange');
+const piecesInfo = document.getElementById('piecesInfo');
+const startBtn = document.getElementById('startBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const hintBtn = document.getElementById('hintBtn');
+const resetBtn = document.getElementById('resetBtn');
+const imgUpload = document.getElementById('imgUpload');
+const urlInput = document.getElementById('urlInput');
+const loadUrl = document.getElementById('loadUrl');
+const timerEl = document.getElementById('timer');
+const winMsg = document.getElementById('winMsg');
+const downloadBtn = document.getElementById('downloadBtn');
+const themeSelect = document.getElementById('themeSelect');
+
+let IMAGE_SRC = 'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=0c7b4d0b7c6d8b7a8c8e8f6d8a2a3b5a'; // placeholder
+let img = new Image();
+let rows = +rowsRange.value;
+let cols = +colsRange.value;
+let snapThreshold = +snapRange.value;
+let pieces = [];
+let pieceSize = {w:0,h:0}; // en px relativos al puzzleArea
+let started = false;
+let startTime = null;
+let timerInterval = null;
+
+function applyTheme(){
+  const t = themeSelect.value;
+  if(t==='pink'){document.documentElement.style.setProperty('--bg','#fff0f6');document.documentElement.style.setProperty('--accent','#ff5fa8');}
+  if(t==='blue'){document.documentElement.style.setProperty('--bg','#f0f8ff');document.documentElement.style.setProperty('--accent','#2b8cff');}
+  if(t==='green'){document.documentElement.style.setProperty('--bg','#f0fff4');document.documentElement.style.setProperty('--accent','#17c964');}
+}
+applyTheme();
+themeSelect.addEventListener('change', applyTheme);
+
+rowsRange.addEventListener('input',()=>{rows = +rowsRange.value; rowsLabel.textContent = rows;});
+colsRange.addEventListener('input',()=>{cols = +colsRange.value; colsLabel.textContent = cols;});
+snapRange.addEventListener('input',()=>{snapThreshold = +snapRange.value;});
+
+img.crossOrigin = 'anonymous';
+img.src = IMAGE_SRC;
+img.onload = ()=>{/* preloaded */};
+
+// Util helpers
+function clearPieces(){ pieces.forEach(p=>p.elem.remove()); pieces = []; }
+function getAreaRect(){ return puzzleArea.getBoundingClientRect(); }
+
+// Crear tablero y piezas
+function createPuzzle(){
+  clearPieces();
+  winMsg.classList.remove('show');
+  const area = getAreaRect();
+  // Ajustar tamaño según relación real de la imagen para que no quede distorsionada:
+  let areaW = area.width, areaH = area.height;
+  // Calculamos tamaño interno (background-size cover) - la técnica de dividir por background-position usa proporción del contenedor.
+  pieceSize.w = areaW / cols;
+  pieceSize.h = areaH / rows;
+
+  // crear piezas
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const piece = document.createElement('div');
+      piece.className = 'piece';
+      piece.style.width = pieceSize.w + 'px';
+      piece.style.height = pieceSize.h + 'px';
+      // Background positioning: usamos la imagen completa escalada para cubrir el área.
+      // Para que la porción muestre correctamente, background-size debe ser (cols*pieceW) x (rows*pieceH) = area size.
+      piece.style.backgroundImage = `url("${img.src}")`;
+      piece.style.backgroundSize = `${cols*pieceSize.w}px ${rows*pieceSize.h}px`;
+      piece.style.backgroundPosition = `${-c*pieceSize.w}px ${-r*pieceSize.h}px`;
+      // Posición objetivo (dentro del tablero)
+      const targetX = c * pieceSize.w;
+      const targetY = r * pieceSize.h;
+      piece.dataset.tx = targetX;
+      piece.dataset.ty = targetY;
+      // Empezamos colocándolas fuera (en una zona mezclada)
+      puzzleArea.appendChild(piece);
+      pieces.push({elem:piece, row:r, col:c, tx:targetX, ty:targetY, placed:false});
+    }
+  }
+
+  // mostrar info
+  piecesInfo.textContent = `${pieces.length} piezas`;
+  // ajustar fuentes si es necesario
+  shufflePieces();
+  startTimer();
+  started = true;
+}
+
+// Mezclar piezas (posiciones aleatorias dentro del área)
+function shufflePieces(){
+  const area = getAreaRect();
+  const padding = 8;
+  pieces.forEach((p,i)=>{
+    const el = p.elem;
+    // Posición inicial aleatoria
+    const randX = Math.random() * (area.width - p.elem.offsetWidth - padding*2) + padding;
+    const randY = Math.random() * (area.height - p.elem.offsetHeight - padding*2) + padding;
+    el.style.left = randX + 'px';
+    el.style.top = randY + 'px';
+    el.style.zIndex = i+1;
+    // rotación leve para dinamismo
+    el.style.transform = `rotate(${(Math.random()*16-8).toFixed(2)}deg)`;
+    p.placed = false;
+  });
+}
+
+// pointer events (soporta mouse & touch)
+let active = null;
+function onPointerDown(e){
+  if(!started) return;
+  const el = e.currentTarget;
+  el.setPointerCapture(e.pointerId);
+  const rect = el.getBoundingClientRect();
+  const areaRect = getAreaRect();
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
+  active = {el, id:e.pointerId, offsetX, offsetY, startClientX:e.clientX, startClientY:e.clientY};
+  el.classList.add('dragging');
+  // llevar al frente
+  el.style.zIndex = 9999;
+}
+function onPointerMove(e){
+  if(!active || e.pointerId !== active.id) return;
+  const el = active.el;
+  const areaRect = getAreaRect();
+  let nx = e.clientX - areaRect.left - active.offsetX;
+  let ny = e.clientY - areaRect.top - active.offsetY;
+  // limitar dentro del area
+  nx = Math.max(-20, Math.min(areaRect.width - el.offsetWidth + 20, nx));
+  ny = Math.max(-20, Math.min(areaRect.height - el.offsetHeight + 20, ny));
+  el.style.left = nx + 'px';
+  el.style.top = ny + 'px';
+  el.style.transform = 'rotate(0deg)'; // quitar rotación mientras arrastra
+}
+function onPointerUp(e){
+  if(!active || e.pointerId !== active.id) return;
+  const el = active.el;
+  el.releasePointerCapture(e.pointerId);
+  el.classList.remove('dragging');
+  // checar cercanía al objetivo
+  const areaRect = getAreaRect();
+  const curLeft = parseFloat(el.style.left || 0);
+  const curTop = parseFloat(el.style.top || 0);
+  // target
+  const tx = parseFloat(el.dataset.tx);
+  const ty = parseFloat(el.dataset.ty);
+  const dx = curLeft - tx;
+  const dy = curTop - ty;
+  const dist = Math.hypot(dx,dy);
+  // snapThreshold relativo: lo guardamos en variable global
+  if(dist <= snapThreshold){
+    el.style.left = tx + 'px';
+    el.style.top = ty + 'px';
+    // marcar colocado si no lo estaba
+    const pieceObj = pieces.find(p=>p.elem===el);
+    if(pieceObj && !pieceObj.placed){
+      pieceObj.placed = true;
+      el.style.pointerEvents = 'none'; // ya no será arrastrable
+      el.style.transform = 'none';
+      el.style.boxShadow = '0 6px 14px rgba(0,0,0,0.06)';
+    }
+    checkWin();
+  } else {
+    // soltar con pequeña bounce (animación)
+    el.style.transition = 'transform .25s ease';
+    setTimeout(()=> el.style.transition = '', 260);
+    // dejar donde está
+  }
+  // pequeña rotación aleatoria al soltar si no está colocado
+  const pieceObj = pieces.find(p=>p.elem===el);
+  if(pieceObj && !pieceObj.placed){
+    el.style.transform = `rotate(${(Math.random()*12-6).toFixed(2)}deg)`;
+  }
+  active = null;
+}
+
+function attachPieceEvents(){
+  pieces.forEach(p=>{
+    p.elem.style.position = 'absolute';
+    p.elem.addEventListener('pointerdown', onPointerDown);
+    p.elem.addEventListener('pointermove', onPointerMove);
+    p.elem.addEventListener('pointerup', onPointerUp);
+    // ensure touch works smoothly
+    p.elem.style.touchAction = 'none';
+  });
+}
+
+// Comprueba si todas las piezas están colocadas
+function checkWin(){
+  const all = pieces.every(p=>p.placed);
+  if(all){
+    win();
+  }
+}
+
+function win(){
+  stopTimer();
+  winMsg.classList.add('show');
+  // efecto simple: animar escala y luego desaparecer después de 4s
+  setTimeout(()=> winMsg.classList.remove('show'), 6000);
+}
+
+// temporizador simple
+function startTimer(){
+  stopTimer();
+  startTime = Date.now();
+  timerInterval = setInterval(()=>{
+    const s = Math.floor((Date.now() - startTime)/1000);
+    const mm = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    timerEl.textContent = `${mm}:${ss}`;
+  }, 500);
+}
+
+function stopTimer(){
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+// Eventos UI
+startBtn.addEventListener('click',()=>{
+  if(!img.src) return alert('Carga una imagen primero.');
+  createPuzzle();
+  attachPieceEvents();
+});
+
+shuffleBtn.addEventListener('click', ()=>{ if(!started) return; shufflePieces(); });
+resetBtn.addEventListener('click', ()=>{ if(!started) return; createPuzzle(); attachPieceEvents(); });
+
+hintBtn.addEventListener('click', ()=>{
+  // mostrar la imagen completa como background temporalmente
+  const overlay = document.createElement('div');
+  overlay.style.position='absolute';
+  overlay.style.inset='0';
+  overlay.style.backgroundImage = `url("${img.src}")`;
+  overlay.style.backgroundSize = 'cover';
+  overlay.style.opacity = '0.95';
+  overlay.style.zIndex = 100000;
+  overlay.style.borderRadius = '12px';
+  overlay.style.transition = 'opacity .3s';
+  puzzleArea.appendChild(overlay);
+  setTimeout(()=>{ overlay.style.opacity = '0'; setTimeout(()=> overlay.remove(),300); },1500);
+});
+
+// manejar upload y url
+imgUpload.addEventListener('change', (ev)=>{
+  const f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    img.src = e.target.result;
+    IMAGE_SRC = img.src;
+    setTimeout(()=>{ startBtn.click(); }, 350);
+  };
+  reader.readAsDataURL(f);
+});
+
+loadUrl.addEventListener('click', ()=>{
+  const url = urlInput.value.trim();
+  if(!url) return alert('Pega una URL válida.');
+  img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = ()=>{
+    IMAGE_SRC = img.src;
+    startBtn.click();
+  };
+  img.onerror = ()=> alert('No se pudo cargar la imagen (CORS o URL inválida).');
+  img.src = url;
+});
+
+// descarga imagen actual
+downloadBtn.addEventListener('click', ()=>{
+  const link = document.createElement('a');
+  link.href = img.src;
+  link.download = 'imagen-puzzle';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
+
+// al redimensionar ventana: recalcular para mantener responsive
+let resizeTimer = null;
+window.addEventListener('resize', ()=>{
+  if(!started) return;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{
+    // recalcular piezas (recrear)
+    createPuzzle();
+    attachPieceEvents();
+  }, 260);
+});
+
+// inicializa con imagen por defecto y crea puzzle automáticamente
+window.addEventListener('load', ()=>{
+  // Cuando la imagen por defecto carga, creamos el puzzle
+  img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=> {
+    // crear juego inicial
+    startBtn.click();
+  };
+  img.src = IMAGE_SRC;
+});
+
+// añadir events pointer capture dinámicamente a las piezas nuevas
+// (la función attachPieceEvents ya añade listeners por pieza)
+
+// Prevención de selección involuntaria
+document.addEventListener('selectstart', e => e.preventDefault());
+</script>
+</body>
+</html>
